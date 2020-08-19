@@ -1,0 +1,48 @@
+install.packages("tidytuesdayR")
+install.packages("wesanderson")
+library(tidytuesdayR)
+library(tidyverse)
+
+
+#cleaning from tidy tuesday script
+plants_wide <- read_csv("https://raw.githubusercontent.com/Z3tt/TidyTuesday/master/data/raw_plants/plants_extinct_wide.csv")
+
+plants_wide %>% 
+  write_csv(here::here("2020", "2020-08-18", "plants.csv"))
+
+threats <- plants_wide %>% 
+  select(-contains("action")) %>% 
+  pivot_longer(cols = contains("threat"), names_to = "threat_type", 
+               values_to = "threatened", names_prefix = "threat_") %>% 
+  mutate(threat_type = case_when(
+    threat_type == "AA" ~ "Agriculture & Aquaculture",
+    threat_type == "BRU" ~ "Biological Resource Use",
+    threat_type == "RCD" ~ "Commercial Development",
+    threat_type == "ISGD" ~ "Invasive Species",
+    threat_type == "EPM" ~ "Energy Production & Mining",
+    threat_type == "CC" ~ "Climate Change",
+    threat_type == "HID" ~ "Human Intrusions",
+    threat_type == "P" ~ "Pollution",
+    threat_type == "TS" ~ "Transportation Corridor",
+    threat_type == "NSM" ~ "Natural System Modifications",
+    threat_type == "GE" ~ "Geological Events",
+    threat_type == "NA" ~ "Unknown",
+    TRUE ~ NA_character_
+  )) 
+threats %>% 
+  write_csv(here::here("2020", "2020-08-18", "threats.csv"))
+
+threat_filtered <- threats %>% 
+  filter(threatened == 1) 
+
+#trying out the wes anderson palette
+library(wesanderson)
+pal<-wes_palette("Darjeeling1",12,"continuous")
+
+threat_filtered %>% 
+  count(threat_type, continent) %>% 
+  ggplot(aes(y = n, x = continent, fill = threat_type)) +
+  geom_col() +
+ scale_fill_manual(values=pal)+
+  labs(x="Continent", y="Number of extinct plant species",fill="Cause of extinction",title="Global plant extinctions")+
+  theme_minimal()
